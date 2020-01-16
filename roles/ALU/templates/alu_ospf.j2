@@ -1,0 +1,81 @@
+    router
+        ospf
+            asbr
+{% if alu.ospf.ref_bw is defined %}
+            reference-bandwidth {{ alu.ospf.ref_bw }}
+{% elif global.ospf.ref_bw is defined %}
+            reference-bandwidth {{ global.ospf.ref_bw }}
+{% endif %}
+{% if alu.ospf.external_db_overflow is defined %}
+            external-db-overflow {{ alu.ospf.external_db_overflow.limit }} {{ alu.ospf.external_db_overflow.seconds }}
+{% endif %}
+            overload-on-boot timeout {{ alu.ospf.overload_on_boot_timeout }}
+            traffic-engineering
+            timers
+                spf-wait 5000 200 200
+                lsa-generate 5000 50 50
+                lsa-arrival 0
+            exit
+{% if ospf.policy is defined %}
+{% if ospf.policy.export is defined %}
+            export {{ ospf.policy.export }}
+{% endif %}
+{% if ospf.policy.import is defined %}
+            import {{ ospf.policy.import }}
+{% endif %}
+{% endif %}
+            graceful-restart
+            exit
+            {{ 'ldp-over-rsvp' if (inventory_hostname in groups['RR'] or inventory_hostname in groups['P']) else 'no ldp-over-rsvp' }}
+            loopfree-alternate
+{# ------------------------------------------------------------------ #}
+{# OSPF config to interfaces explicitly defined in ospf_interface.yml #}
+{% for ospf_area in ospf.area %}
+            area {{ ospf_area }}
+{% if ospf['area']['0.0.0.0'] is defined and ospf_area == "0.0.0.0" %}
+                interface system
+                    passive
+                    no shutdown
+                exit
+{% elif ospf['area']['0.0.0.0'] is not defined %}
+                interface system
+                    passive
+                    no shutdown
+                exit
+{% endif %}
+{% for ospf_intf in ospf['area'][ospf_area]['interface'] %}
+{% set ospf_dict = ospf['area'][ospf_area]['interface'][ospf_intf] %}
+                interface {{ ospf_intf }}
+{% if ospf_dict.type is defined and not ospf_dict.type %}
+                    no interface-type
+{% elif ospf_dict.type is defined %}
+                    interface-type {{ ospf_dict.type }}
+{# Default is to set interface-type to point-to-point if not specified #}
+{% else %}
+                    interface-type point-to-point
+{% endif %}
+{% if ospf_dict.metric is defined %}
+                    metric {{ ospf_dict.metric }}
+{% else %}
+                    no metric
+{% endif %}
+{% if ospf_dict.md5 is defined and not ospf_dict.md5 %}
+                    no authentication-type message-digest
+                    no message-digest-key 1
+{% elif ospf_dict.md5 is defined %}
+                    authentication-type message-digest
+                    message-digest-key 1 md5 {{ ospf_dict.md5 }}
+{% else %}
+                    authentication-type message-digest
+                    message-digest-key 1 md5 {{ global.ospf.md5 }}
+{% endif %}
+{# BFD enabled by default - even if not specified in config #}
+                    {{ 'no bfd-enable' if (ospf_dict.bfd is defined and ospf_dict.bfd == "disabled") else 'bfd-enable' }}
+                    {{ 'passive' if (ospf_dict.passive is defined and ospf_dict.passive) else 'no passive' }}
+                    {{ 'shutdown' if (ospf_dict.shutdown is defined and ospf_dict.shutdown) else 'no shutdown' }}
+                exit
+{% endfor %}
+            exit
+{% endfor %}
+        exit
+    exit

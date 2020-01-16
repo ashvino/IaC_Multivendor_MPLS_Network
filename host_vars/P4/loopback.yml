@@ -1,0 +1,3 @@
+# Generated from loopback_id.pb using loopback_id.j2 template
+loopback_id: 4
+ansible_host: 192.168.1.107

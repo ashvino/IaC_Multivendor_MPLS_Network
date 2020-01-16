@@ -1,0 +1,5 @@
+# Generated from loopback_gen.pb using loopback.j2 template
+loopbacks:
+{% for host in groups['MPLS_Multi']|sort %}
+  {{ host }}: {{ hostvars[host].loopback_prefix }}.{{ hostvars[host].loopback_id }}
+{% endfor %}

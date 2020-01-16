@@ -1,0 +1,3 @@
+---
+- name: Generate variable for host
+  template: src="jun_gen_core_interface.j2" dest="{{ hostvar_dir }}/core_interfaces.yml"

@@ -1,0 +1,101 @@
+configure
+#--------------------------------------------------
+echo "System Configuration"
+#--------------------------------------------------
+    system
+        name "{{ inventory_hostname }}"
+        contact "TEST LAB Operations"
+        location "TEST LAB Home"
+        rollback
+            rollback-location "cf3:\rollback-file"
+        exit
+        chassis-mode d
+        mixed-mode
+        system-ip-load-balancing
+        service-id-lag-hashing
+        time
+            ntp
+                server {{ global.ntp_server[0] }} prefer
+                no shutdown
+            exit
+            sntp
+                shutdown
+            exit
+            dst-zone {{ global.time_zone }}
+                start last sunday march 01:00
+                end last sunday october 02:00
+            exit
+            zone GMT 
+        exit
+        thresholds
+            rmon
+            exit
+        exit
+        lldp
+             no shutdown
+        exit
+    exit
+#--------------------------------------------------
+echo "System Security Configuration"
+#--------------------------------------------------
+    system
+        security
+            profile "READ"
+                default-action deny-all
+                entry 100
+                    match "show"
+                    action permit
+                exit
+            exit
+            user "admin"
+                password "$2y$10$TCnX441vi7MWErXguum9te5UK3.wDGYg7rZUvyh6lbOk9VeS7hESq" 
+                access console 
+                console
+                    member "administrative"
+                exit
+            exit
+            user "{{ ansible_ssh_user  }}"
+                password {{ ansible_ssh_pass }}
+                rsa-key 1 "{{ lookup('file', '{{ ansible_ssh_key}}') | replace('ssh-rsa ', '') }}"
+                console
+                    no member "default"
+                    member "administrative"
+                exit
+            exit
+            ssh
+                preserve-key
+            exit
+            per-peer-queuing
+            cpu-protection
+                link-specific-rate max
+                policy 254 create
+                exit
+                policy 255 create
+                exit
+                port-overall-rate 15000
+            exit
+        exit
+    exit
+#--------------------------------------------------
+echo "System Login Control Configuration"
+#--------------------------------------------------
+    system
+        login-control
+            ssh
+                inbound-max-sessions 10
+            exit
+            pre-login-message {{ global.banner }}
+            no login-banner
+        exit
+    exit
+#--------------------------------------------------
+echo "Log Configuration"
+#--------------------------------------------------
+    log
+        log-id 50
+            description "DEBUG"
+            from debug-trace
+            to memory 500
+            exit
+        exit
+    exit

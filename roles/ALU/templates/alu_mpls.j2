@@ -1,0 +1,105 @@
+    router
+{% if inventory_hostname not in groups['RR'] %}
+#--------------------------------------------------
+echo "MPLS Configuration"
+#--------------------------------------------------
+        mpls
+            interface "system"
+                no shutdown
+            exit
+{% for interface in core_interface if ("core" in interface and interface.split("_")[1] in groups['P']) %}
+            interface "{{ interface }}"
+                no shutdown
+            exit
+{% endfor %}
+        exit
+{# --------------- Only apply RSVP config to P-nodes ------------------- #}
+{% if inventory_hostname in groups['P'] %}
+#--------------------------------------------------
+echo "RSVP Configuration"
+#--------------------------------------------------
+        rsvp
+            no shutdown
+            interface "system"
+                no shutdown
+            exit
+{% for interface in core_interface if ("core" in interface and interface.split("_")[1] in groups['P']) %}
+            interface "{{ interface }}"
+                #authentication-key "{{ global_mpls.rsvp.auth_key }}" 
+                subscription 0
+                no shutdown
+            exit
+{% endfor %}
+        exit
+#--------------------------------------------------
+echo "MPLS LSP Configuration"
+#--------------------------------------------------
+        mpls
+            path "loose"
+                no shutdown
+            exit
+            path "10.162.10.88-10.162.14.182"
+                hop 1 10.56.171.65 strict
+                hop 2 10.162.14.182 strict
+                no shutdown
+            exit
+            path "10.162.10.88-62.239.160.231"
+                hop 1 10.56.171.69 strict
+                hop 2 62.239.160.231 strict
+                no shutdown
+            exit
+{% for rsvp_peer in groups['P'] if (rsvp_peer != inventory_hostname and rsvp_peer not in groups['RR']) %}
+            lsp "{{ inventory_hostname }}_to_{{ rsvp_peer }}"
+                to {{ loopbacks[rsvp_peer] }}
+                from {{ loopbacks[inventory_hostname] }}
+                cspf
+                adspec
+                retry-timer 15
+                primary "loose"
+                exit
+                no shutdown
+            exit
+{% endfor %}
+            exit
+            no shutdown
+        exit
+{% endif %}
+#--------------------------------------------------
+echo "LDP Configuration"
+#--------------------------------------------------
+        ldp
+            export "pe-router-id-to-ldp" 
+            implicit-null-label
+# tLDP peer-parameters not applicable for P-routers [Only PEs]
+{% if inventory_hostname in groups['All_PEs'] %}
+            peer-parameters
+{% for peername in groups['All_PEs']|sort if peername != inventory_hostname %}
+                #### INFO: {{ peername }} #####               
+                peer {{ loopbacks[peername] }}
+                    authentication-key "{{ global_mpls.ldp.auth_key }}" hash2
+                exit
+{% endfor %}
+            exit
+{% endif %}
+            interface-parameters
+{% for interface in core_interface if "metro" in interface %}
+                interface "{{ interface }}"
+                    hello 30 3
+                    keepalive 60 3
+                exit
+{% endfor %}
+            exit
+            targeted-session
+                hello 180 3
+                keepalive 180 3
+{% if inventory_hostname in groups['P'] %}
+{% for ldporsvp_peer in groups['P'] if (ldporsvp_peer != inventory_hostname and ldporsvp_peer not in groups['RR']) %}
+                peer {{ loopbacks[ldporsvp_peer] }}
+                    tunneling
+                exit
+{% endfor %}
+{% endif %}
+            exit
+            no shutdown
+        exit
+{% endif %}

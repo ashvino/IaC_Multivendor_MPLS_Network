@@ -1,0 +1,124 @@
+interfaces:
+  linecard:
+    0:
+      slot:
+        0:
+          port:
+            0:
+              #shutdown: False
+              #mtu: 1518
+              function: core
+              encapsulation: dot1q
+              phy: ge
+              lldp: enabled
+              units:
+                - id: 30
+                  #interface_name: core_P1  #Generated based on {{function}}_{{neighbor}} and stored in router_interface.yml
+                  function: core
+                  neighbor: P1
+                  neighbor_port: ge-0/0/2
+                  inet: 10.10.10.7
+                  #mask: 31
+                  ospf:
+                    area: 0.0.0.0
+                    metric: 100
+                    #md5: Testing
+                    shutdown: False
+                - id: 40
+                  function: core
+                  neighbor: RR3
+                  neighbor_port: 1/13
+                  inet: 10.10.0.15
+                  mask: 31
+                  ospf:
+                    area: 0.0.0.0
+                    shutdown: False
+                - id: 50
+                  function: core
+                  neighbor: RR1
+                  neighbor_port: ge-0/0/6
+                  inet: 10.10.0.11
+                  mask: 31
+                  ospf:
+                    area: 0.0.0.0
+            1:
+              shutdown: False
+              encapsulation: dot1q
+              function: core
+              lldp: enabled
+              phy: ge
+              units:
+                - id: 31
+                  function: core
+                  neighbor: P3
+                  neighbor_port: ge-0/0/1
+                  inet: 10.10.10.5
+                  mask: 31
+                  ospf:
+                    area: 0.0.0.0
+            3:
+              shutdown: False
+              function: metro
+              lldp: enabled
+              encapsulation: dot1q
+              #mtu: 1518
+              phy: ge
+              units:
+                - id: 116
+                  function: metro
+                  neighbor: S-PE01
+                  neighbor_port: ge-0/0/2
+                  inet: 10.10.30.3
+                  mask: 31
+                  ospf:
+                    area: 8.0.0.1
+                    ldp_sync: true
+                - id: 117
+                  function: metro
+                  neighbor: E-PE01
+                  neighbor_port: ge-0/0/2
+                  inet: 10.10.40.3
+                  mask: 31
+                  ospf:
+                    area: 0.0.0.0
+                    ldp_sync: 10
+                - id: 118
+                  function: metro
+                  neighbor: PE01
+                  neighbor_port: ge-0/0/2
+                  inet: 10.10.20.3
+                  mask: 31
+                  ospf:
+                    area: 0.0.0.0
+            4:
+              function: metro
+              encapsulation: dot1q
+              lldp: enabled
+              #mtu: 1518
+              phy: ge
+              units:
+                - id: 131
+                  function: metro
+                  neighbor: PE04
+                  neighbor_port: Gi0/0/1
+                  inet: 10.10.21.5
+                  mask: 31
+                  ospf:
+                    area: 0.0.0.0
+                - id: 132
+                  function: metro
+                  neighbor: PE06
+                  neighbor_port: 1/1/1
+                  inet: 10.10.22.5
+                  mask: 31
+                  ospf:
+                    area: 0.0.0.0
+                - { id: 133, function: metro, neighbor: S-PE03, neighbor_port: 1/1/1, inet: 10.10.31.1, mask: 31, ospf: { area: 8.0.0.3, type: point-to-point }}
+                  #function: metro
+                  #neighbor: S-PE03
+                  #neighbor_port: 1
+                  #inet: 10.10.31.1
+                  #mask: 31
+                  #ospf:
+                    #area: 8.0.0.3
+                    #type: point-to-point

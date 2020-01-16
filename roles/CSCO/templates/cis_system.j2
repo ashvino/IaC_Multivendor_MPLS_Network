@@ -1,0 +1,59 @@
+hostname {{ inventory_hostname }}
+{#group OSPF-INTERFACE-CORE
+ router ospf '.*'
+  area '.*'
+   interface 'GigabitEthernet.*'
+    bfd minimum-interval 300
+    bfd fast-detect
+    bfd multiplier 3
+    network point-to-point
+    fast-reroute per-prefix
+   !
+  !
+ !
+end-group#}
+domain name {{ global.domain_name }}
+domain name-server {{ global.dns_server }}
+banner {{ csco.banner }}
+banner motd {{ csco.banner }}
+ftp client source-interface MgmtEth0/0/CPU0/0
+alias exec q exit
+ntp
+ server {{ global.ntp_server[0] }}
+!
+bfd
+ echo disable
+!
+control-plane
+ management-plane
+  out-of-band
+   interface MgmtEth0/0/CPU0/0
+    allow all
+    allow SSH peer
+     address ipv4 {{ oob_mgmt_prefix }}.0/24 
+    !
+    allow XML
+    allow NETCONF peer
+     address ipv4 {{ oob_mgmt_prefix }}.0/24
+    !
+   !
+  !
+ !
+!
+root
+ssh server v2
+ssh server vrf default
+ssh server netconf vrf default
+lldp
+ subinterfaces enable
+ tlv-select
+  management-address disable
+ !
+!
+xml agent tty
+ iteration off
+!
+netconf agent tty
+!
+netconf-yang agent
+ 

@@ -1,0 +1,318 @@
+replace:
+routing-options {
+    router-id {{ loopbacks[inventory_hostname] }};
+    autonomous-system {{ global_mpls.bgp.asn }};
+{% if inventory_hostname in groups['PE'] %}
+    resolution {
+        rib bgp.rtarget.0 {
+            resolution-ribs inet.0;
+        }
+    }
+{% elif inventory_hostname in groups['RR'] %}
+    resolution {
+        rib bgp.rtarget.0 {
+            resolution-ribs inet.0;
+        }
+        rib bgp.l2vpn.0 {
+            resolution-ribs inet.0;
+        }
+        rib bgp.l3vpn.0 {
+            resolution-ribs inet.0;
+        }
+    }
+{% endif %}
+    forwarding-table {
+        export LB;
+    }
+}
+replace:
+protocols {
+    lldp {
+        management-address {{ loopbacks[inventory_hostname] }};
+        port-id-subtype interface-name;
+        interface all;
+    }
+{# ------------------ OSPF Config --------------- #}
+    ospf {
+        traffic-engineering;
+        reference-bandwidth 10g;
+{% for area in ospf.area %}
+        area {{ area }} {
+{% if ospf['area']['0.0.0.0'] is defined and area == "0.0.0.0" %}
+            interface lo0.0 {
+                passive;
+            }
+{% elif ospf['area']['0.0.0.0'] is not defined %}
+            interface lo0.0 {
+                passive;
+            }
+{% endif %}
+{% for intf in ospf['area'][area]['interface'] %}
+{% set interface_dict = ospf['area'][area]['interface'][intf] %}
+{#            /* {{ core_interface[intf] }} */#}
+{% for int_desc in core_interface %}
+{% if intf == core_interface[int_desc]['ifl'] %}
+            /* {{ int_desc }} */
+{% endif %}
+{% endfor %}
+            interface {{ intf }} {
+                {{ 'interface-type p2p;' if (interface_dict.type is defined and interface_dict.type == "point-to-point") else '#delete interface-type;' if (interface_dict.type is defined and not interface_dict.type) else 'interface-type p2p;' }} 
+                node-link-protection;
+                {{ ('metric ' + interface_dict.metric|string + ';') if interface_dict.metric is defined else '#delete: metric;' }}
+{% if interface_dict.md5 is defined and not interface_dict.md5 %}
+                #delete: authentication;
+{% elif interface_dict.md5 is defined %}
+                authentication {
+                    md5 1 key "{{ interface_dict.md5 }}";
+                }
+{% else %}
+                authentication {
+                    md5 1 key "{{ global_mpls.ospf.md5_key }}";
+                }
+{% endif %}
+{% if (interface_dict.bfd is defined and interface_dict.bfd == "disabled") %}
+                #delete: bfd-liveness-detection;
+{% else %}
+                bfd-liveness-detection {
+                    minimum-interval {{ global.bfd.min_interval }};
+                    multiplier {{ global.bfd.multiplier }};
+                }
+{% endif %}
+                {{ 'disable;' if (interface_dict.shutdown is defined and interface_dict.shutdown) else '#delete: disable;' }}
+{% for ldp_int in core_interface %}
+{% if (intf == core_interface[ldp_int]['ifl'] and "metro" in ldp_int) %}
+                ldp-synchronization;
+{% endif %}
+{% endfor %}
+            }
+{% endfor %}
+        }
+{% endfor %}
+    }
+{# ----------------------- BGP Config --------------------- #}
+{% if inventory_hostname in groups['RR'] %}
+    bgp {
+        group RR-Clients {
+            family inet {
+                unicast {
+                    add-path {
+                        send {
+                            path-count 2;
+                        }
+                    }
+                }
+                any;
+            }
+            family inet-vpn {
+                any;
+            }
+            family inet6 {
+                labeled-unicast {
+                    explicit-null;
+                }
+            }
+            family inet6-vpn {
+                any;
+            }
+            family l2vpn {
+                auto-discovery-only;
+                signaling;
+            }
+            family evpn {
+                signaling;
+            }
+            family inet-mvpn {
+                signaling;
+            }
+            family inet-mdt {
+                signaling;
+            }
+            family route-target {
+                advertise-default;
+            }
+            type internal;
+            local-address {{ loopbacks[inventory_hostname] }};
+            cluster {{ loopbacks[inventory_hostname] }};
+            peer-as {{ global_mpls.bgp.asn }};
+{% for neighbor in groups['All_PEs']|sort %}
+            /* {{ neighbor }} */
+            neighbor {{ loopbacks[neighbor] }};
+{% endfor %}
+        }
+        group RR-Mesh {
+            family inet {
+                unicast {
+                    add-path {
+                        send {
+                            path-count 2;
+                        }
+                    }
+                }
+                any;
+            }
+            family inet-vpn {
+                any;
+            }
+            family inet6 {
+                labeled-unicast {
+                    explicit-null;
+                }
+            }
+            family inet6-vpn {
+                any;
+            }
+            family l2vpn {
+                auto-discovery-only;
+                signaling;
+            }
+            family evpn {
+                signaling;
+            }
+            family inet-mvpn {
+                signaling;
+            }
+            family inet-mdt {
+                signaling;
+            }
+            family route-target;
+            type internal;
+            local-address {{ loopbacks[inventory_hostname] }};
+            peer-as {{ global_mpls.bgp.asn }};
+{% for neighbor in groups['RR']|sort if neighbor != inventory_hostname %}
+            /* {{ neighbor }} */
+            neighbor {{ loopbacks[neighbor] }};
+{% endfor %}
+        }
+    }
+{% elif inventory_hostname in groups['All_PEs'] %}
+    bgp {
+        group RR {
+            family inet {
+                any;
+            }
+            family inet-vpn {
+                any;
+            }
+            family inet6 {
+                labeled-unicast {
+                    explicit-null;
+                }
+            }
+            family inet6-vpn {
+                any;
+            }
+            family l2vpn {
+                auto-discovery-only;
+                signaling;
+            }
+            family evpn {
+                signaling;
+            }
+            family inet-mvpn {
+                signaling;
+            }
+            family inet-mdt {
+                signaling;
+            }
+            family route-target;
+            type internal;
+            local-address {{ loopbacks[inventory_hostname] }};
+            peer-as {{ global_mpls.bgp.asn }};
+{% for neighbor in groups['RR']|sort %}
+            /* {{ neighbor }} */
+            neighbor {{ loopbacks[neighbor] }};
+{% endfor %}
+        }
+    }
+{% endif %}
+{# ----------------------- LDP Config --------------------- #}
+{% if inventory_hostname not in groups['RR'] %}
+    ldp {
+        track-igp-metric;
+        deaggregate;
+        explicit-null;
+        transport-address router-id;
+        interface lo0.0;
+{% for ldp_int in core_interface|sort %}
+{% if "metro" in ldp_int %}
+        /* {{ ldp_int }} */
+        interface {{ core_interface[ldp_int]['ifl'] }};
+{% endif %}
+{% endfor %}
+        interface fxp0.0 {
+            disable;
+        }
+        session-protection;
+        igp-synchronization holddown-interval 10;
+    }
+{% endif %}
+{# -------------------- RSVP Config for Core Nodes only ------------------------ #}
+{% if inventory_hostname in groups['P'] %}
+    rsvp {
+        interface lo0.0;
+{% for rsvp_int in core_interface|sort %}
+{% if "core" in rsvp_int and rsvp_int.split("_")[1] in groups['P'] %}
+        /* {{ rsvp_int }} */
+        interface {{ core_interface[rsvp_int]['ifl'] }} {
+            link-protection {
+                optimize-timer 1800;
+            }
+        }
+{% endif %}
+{% endfor %}
+        interface fxp0.0 {
+            disable;
+        }
+    }
+{# ------------------------------ MPLS Config ------------------------------- #}
+    mpls {
+        path-mtu {
+            rsvp mtu-signaling;
+        }
+        admin-groups {
+            TEST 1;
+        }
+        optimize-aggressive;
+        explicit-null;
+        ipv6-tunneling;
+        icmp-tunneling;
+        optimize-timer 1800;
+{% if inventory_hostname not in groups['RR'] %}
+{% for rsvp_peer in groups['P']|sort if (rsvp_peer != inventory_hostname and rsvp_peer not in groups['RR']) %}
+        label-switched-path {{ inventory_hostname }}_to_{{ rsvp_peer  }} {
+            to {{ loopbacks[rsvp_peer] }};
+            ldp-tunneling;
+            node-link-protection;
+            adaptive;
+        }
+{% endfor %}
+        path P1-P4-Direct {
+            10.0.0.3 strict;
+        }
+{% if inventory_hostname == 'J-P1' %}
+        path P1-P4_viaP3 {
+            {{ hostvars[inventory_hostname]['topo']['J-P3']['A-P4']['inet'] }} loose;
+        }
+{% endif %}
+{% endif %}
+        interface fxp0.0 {
+            disable;
+        }
+{% for mpls_int in core_interface|sort %}
+{% if mpls_int.split("_")[1] in groups['P'] or mpls_int.split("_")[1] in groups['PE'] %}
+        /* {{ mpls_int }} */
+        interface {{ core_interface[mpls_int]['ifl'] }};
+{% endif %}
+{% endfor %}
+    }
+{% endif %}
+{# -------------------- MPLS Config Interfaces for PEs ----------------------#}
+{% if inventory_hostname in groups['PE'] %}
+    mpls {
+{% for mpls_int in core_interface|sort %}
+        /* {{ mpls_int }} */
+        interface {{ core_interface[mpls_int]['ifl'] }};
+{% endfor %}
+    }
+{% endif %}
+}

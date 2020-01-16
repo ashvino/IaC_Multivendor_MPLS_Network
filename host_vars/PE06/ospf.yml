@@ -1,0 +1,11 @@
+ospf:
+  policy:
+#    export: static-to-ospf
+#    import: Test
+  area:
+    0.0.0.0:
+      interface:
+        metro_A-P4:
+          type: point-to-point
+        metro_J-P3:
+          type: point-to-point

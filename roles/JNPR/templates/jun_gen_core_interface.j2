@@ -1,0 +1,24 @@
+# Generated from gen_var.pb using gen_var.j2 template 
+core_interface:
+{% for lcnum in interfaces['linecard'] %}
+{% for slotnum in interfaces['linecard'][lcnum]['slot'] %}
+{% for portnum in interfaces['linecard'][lcnum]['slot'][slotnum]['port'] %}
+{% set interface_dict = interfaces['linecard'][lcnum]['slot'][slotnum]['port'][portnum] %}
+{% if interface_dict.units is defined %}
+{% for logical_unit in interface_dict.units %}
+{% set intf = (interface_dict.phy)|string + "-" + (lcnum)|string + "/" + (slotnum)|string + "/" + (portnum)|string + "." + (logical_unit.id)|string %}
+{#  {{ intf }}: {{ logical_unit.function }}_{{ logical_unit.neighbor }}#}
+  {{ logical_unit.function }}_{{ logical_unit.neighbor }}:
+    ifl: {{ intf }}
+    inet: {{ logical_unit.inet }}
+{% endfor %}
+{% else %}
+{% set intf = (interface_dict.phy)|string + "-" + (lcnum)|string + "/" + (slotnum)|string + "/" + (portnum)|string %}
+  {{ interface_dict.function }}_{{ interface_dict.neighbor }}:
+    ifl: {{ intf }}.0
+    inet: {{ interface_dict.inet }}
+{# {{ intf }}.0: {{ interface_dict.function }}_{{ interface_dict.neighbor }} #}
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% endfor %}

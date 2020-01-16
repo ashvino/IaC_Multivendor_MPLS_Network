@@ -1,0 +1,52 @@
+{% if inventory_hostname not in groups['P'] %}
+    router
+        autonomous-system {{ global_mpls.bgp.asn }}
+        bgp
+{# ------------------------ BGP Config for PEs --------------------------#}
+{% if inventory_hostname in groups['All_PEs'] %}
+            group "CORE"
+                family ipv4 vpn-ipv4 mcast-ipv4 vpn-ipv6 l2-vpn mvpn-ipv4 mdt-safi ms-pw route-target mcast-vpn-ipv4 mvpn-ipv6 evpn mcast-ipv6
+                next-hop-self
+                type internal
+                local-as {{ global_mpls.bgp.asn }}
+                peer-as {{ global_mpls.bgp.asn }}
+                local-address {{ loopbacks[inventory_hostname] }}
+{% for neighbor in groups['RR']|sort %}
+                neighbor {{ loopbacks[neighbor] }}
+                    description "Route Reflector: {{ neighbor }}"
+                exit
+{% endfor %}
+{# -------------------------- BGP Config for RR ---------------------------- #}
+{% elif inventory_hostname in groups['RR'] %}
+            group "RR-Clients"
+                family ipv4 vpn-ipv4 mcast-ipv4 vpn-ipv6 l2-vpn mvpn-ipv4 mdt-safi ms-pw route-target mcast-vpn-ipv4 mvpn-ipv6 evpn mcast-ipv6
+                cluster {{ loopbacks[inventory_hostname] }}
+                type internal
+                local-as {{ global_mpls.bgp.asn }}
+                peer-as {{ global_mpls.bgp.asn }}
+                local-address {{ loopbacks[inventory_hostname] }}
+                default-route-target
+{% for neighbor in groups['All_PEs']|sort %}
+                neighbor {{ loopbacks[neighbor] }}
+                    description "Route Reflector Client: {{ neighbor }}"
+                exit
+{% endfor %}
+            exit
+            no shutdown
+            group "RR-Mesh"
+                family ipv4 vpn-ipv4 mcast-ipv4 vpn-ipv6 l2-vpn mvpn-ipv4 mdt-safi ms-pw route-target mcast-vpn-ipv4 mvpn-ipv6 evpn mcast-ipv6
+                type internal
+                local-as {{ global_mpls.bgp.asn }}
+                peer-as {{ global_mpls.bgp.asn }}
+                local-address {{ loopbacks[inventory_hostname] }}
+{% for neighbor in groups['RR']|sort if neighbor != inventory_hostname %}
+                neighbor {{ loopbacks[neighbor] }}
+                    description "Route Reflector Mesh: {{ neighbor }}"
+                exit
+{% endfor %}
+{% endif %}
+            exit
+            no shutdown
+        exit
+    exit
+{% endif %}

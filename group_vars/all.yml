@@ -1,0 +1,23 @@
+---
+company_name: TESTLAB.NET
+ansible_connection: local
+base_dir: '{{ playbook_dir }}'
+hostvar_dir: '{{ base_dir }}/host_vars/{{ inventory_hostname }}'
+global:
+  banner: |
+    " --------------------------------------------------------------------------------------\n|          WARNING: You have accessed a system operated by {{company_name}}                 |\n|                                                                                      |\n| You are required to have a personal authorisation from the system administrator      |\n| before you use this system and you are strictly limited to the use set out in        |\n| that written authorisation. Unauthorised access to or misuse of this system is       |\n| prohibited and constitutes an offence.            |\n|                                                                                      |\n| This is a private system and any authorized access is illegal and will be prosecuted |\n -------------------------------------------------------------------------------------"
+  time_zone: UTC
+  ntp_server: 
+    - 192.168.1.54
+  dns_server: 192.168.1.54
+  domain_name: testlab.net
+  interface:
+    core:
+      mtu: 1518
+  bfd:
+    min_interval: 300
+    multiplier: 3
+  ospf:
+    ref_bw: 100000000000
+    overload_on_boot_timeout: 300
+    md5: ospf_md5

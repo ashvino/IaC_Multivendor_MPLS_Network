@@ -1,0 +1,52 @@
+system {
+    host-name {{ inventory_hostname }};
+    domain-search {{ global.domain_name }};
+    root-authentication {
+        encrypted-password "$5$kat67N8J$0vLnVzEZkaPRf0ImYcgjqQl7fiBhhW2nCJiMgO010DC"; ## SECRET-DATA
+    }
+    name-server {
+        {{ global.dns_server }};
+    }
+    login {
+        message {{ global.banner }}; 
+        user {{ ansible_ssh_user }} {
+            uid 2002;
+            class super-user;
+            authentication {
+                encrypted-password "$1$UcfJeoFQ$MDPNnW8s/t95hBryeBpGK1"; ## SECRET-DATA
+                ssh-rsa "{{ lookup('file', '{{ ansible_ssh_key }}') }}"; 
+            }
+        }
+    }
+    services {
+        ssh;
+        netconf {
+            ssh;
+        }
+    }
+    syslog {
+        user * {
+            any emergency;
+        }
+        file messages {
+            any notice;
+            authorization info;
+        }
+        file interactive-commands {
+            interactive-commands any;
+        }
+    }
+    ntp {
+        server {{ global.ntp_server[0] }};
+    }
+}
+chassis {
+    fpc 0 {
+        pic 0 {
+            tunnel-services {
+                bandwidth 1g;
+            }
+        }
+    }
+    network-services enhanced-ip;
+}

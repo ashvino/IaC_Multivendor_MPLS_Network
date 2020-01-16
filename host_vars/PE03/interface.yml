@@ -1,0 +1,30 @@
+interfaces:
+  linecard:
+    0:
+      slot:
+        0:
+          port:
+            1:
+              function: metro
+              encapsulation: dot1q
+              phy: ge
+              units:
+                - id: 103
+                  function: metro
+                  neighbor: P1
+                  neighbor_port: ge-0/0/5.103
+                  inet: 10.10.21.0
+                  ospf:
+                    area: 0.0.0.0
+            2:
+              function: metro
+              encapsulation: dot1q
+              phy: ge
+              units:
+                - id: 108
+                  function: metro
+                  neighbor: P2
+                  neighbor_port: Gi0/0/0/5.108
+                  inet: 10.10.21.2
+                  ospf:
+                    area: 0.0.0.0

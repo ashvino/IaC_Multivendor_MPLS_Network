@@ -1,0 +1,16 @@
+ospf:
+  policy:
+#    export: static-to-ospf
+#    import: Test
+  area:
+    0.0.0.0:
+      interface:
+        core_J-P1:
+          shutdown: True
+          metric: 100
+          type: point-to-point
+          md5_key: "{{ global.ospf.md5_key }}"
+        core_C-P2:
+          metric: 200
+          type: point-to-point
+          md5_key: "{{ global.ospf.md5_key }}"

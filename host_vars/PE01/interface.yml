@@ -1,0 +1,34 @@
+interfaces:
+  linecard:
+    0:
+      slot:
+        0:
+          port:
+            1:
+              #shutdown: False
+              #mtu: 1518
+              function: metro
+              encapsulation: dot1q
+              phy: ge
+              lldp: enabled
+              units:
+                - id: 113
+                  function: metro
+                  neighbor: P1
+                  neighbor_port: ge-0/0/6
+                  inet: 10.10.20.0
+                  ospf:
+                    area: 0.0.0.0
+            2:
+              shutdown: False
+              function: metro
+              encapsulation: dot1q
+              phy: ge
+              units:
+                - id: 118
+                  function: metro
+                  neighbor: P4
+                  neighbor_port: 1/1/4
+                  inet: 10.10.20.2
+                  ospf:
+                    area: 0.0.0.0

@@ -1,0 +1,51 @@
+interfaces:
+  linecard:
+    0:
+      slot:
+        0:
+          port:
+            0:
+              #shutdown: False
+              mtu: 1514
+              phy: ge
+              function: core
+              encapsulation: none
+              neighbor: RR1
+              neighbor_port: ge-0/0/1
+              inet: 10.10.0.1
+              #mask: 30
+              ospf:
+                area: 0.0.0.0
+                metric: 100
+                bfd: disabled
+                shutdown: False
+                #type: point-to-point
+            1:
+              shutdown: False
+              encapsulation: dot1q
+              function: core
+              phy: ge
+              units:
+                - id: 10
+                  function: core
+                  neighbor: P1
+                  neighbor_port: ge-0/0/2
+                  inet: 10.10.0.12
+                  mask: 31
+                  ospf:
+                    area: 0.0.0.0
+                    #metric: 2000
+            2:
+              shutdown: False
+              encapsulation: dot1q
+              function: core
+              phy: ge
+              units:
+                - id: 40
+                  function: core
+                  neighbor: P4
+                  neighbor_port: 1/1/1
+                  inet: 10.10.0.14
+                  mask: 31
+                  ospf:
+                    area: 0.0.0.0

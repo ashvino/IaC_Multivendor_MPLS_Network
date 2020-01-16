@@ -1,0 +1,5 @@
+# Generated from gen_var.pb using gen_var.j2 template 
+core_interface:
+  core_RR1: 1/1/1
+  core_P1: 1/1/2:10
+  core_P4: 1/1/3:40

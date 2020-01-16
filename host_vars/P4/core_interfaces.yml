@@ -1,0 +1,12 @@
+# Generated from gen_var.pb using gen_var.j2 template 
+core_interface:
+  core_P1: 1/1/1:30
+  core_RR3: 1/1/1:40
+  core_RR1: 1/1/1:50
+  core_P3: 1/1/2:31
+  metro_S-PE01: 1/1/4:116
+  metro_E-PE01: 1/1/4:117
+  metro_PE01: 1/1/4:118
+  metro_PE04: 1/1/5:131
+  metro_PE06: 1/1/5:132
+  metro_S-PE03: 1/1/5:133

@@ -1,0 +1,316 @@
+router ospf CORE
+{# apply-group OSPF-INTERFACE-CORE #}
+ router-id {{ loopbacks[inventory_hostname] }} 
+ auto-cost reference-bandwidth 10000
+ address-family ipv4 unicast
+{% for area in ospf.area %}
+ area {{ area }}
+  mpls traffic-eng
+{% if ospf['area']['0.0.0.0'] is defined and area =="0.0.0.0" %}
+  interface Loopback0
+   passive enable
+  !
+{% elif ospf['area']['0.0.0.0'] is not defined %}
+  interface Loopback0
+   passive enable
+  !
+{% endif %}
+{% for intf in ospf['area'][area]['interface'] %}
+{% set interface_dict = ospf['area'][area]['interface'][intf] %}
+  interface {{ intf }}
+   {{ 'no network point-to-point' if (interface_dict.type is defined and interface_dict.type != "point-to-point") else 'network point-to-point' }}
+   {{ ('cost ' + interface_dict.metric|string ) if interface_dict.metric is defined else 'no cost' }}
+{% if interface_dict.md5 is defined and not interface_dict.md5 %}
+   no authentication
+   no message-digest-key
+{% elif interface_dict.md5 is defined %}
+   authentication message-digest
+   message-digest-key 1 md5 {{ interface_dict.md5 }}
+{% else %}
+   authentication message-digest
+   message-digest-key 1 md5 {{ global_mpls.ospf.md5_key }}
+{% endif %}
+{% if (interface_dict.bfd is defined and interface_dict.bfd == "disabled") %}
+   no bfd
+{% else %}
+   bfd minimum-interval {{ global.bfd.min_interval }}
+   bfd multiplier {{ global.bfd.multiplier }}
+{% endif %}
+{#                {{ 'disable;' if (interface_dict.shutdown is defined and interface_dict.shutdown) else 'delete: disable;' }}
+root
+ ########### #}
+{% for ldp_int in core_interface %}
+{% if (intf == core_interface[ldp_int] and "metro" in ldp_int) %}
+   mpls ldp sync
+{% endif %}
+{% endfor %}
+  !
+{% endfor %}
+ !
+{% endfor %}
+ mpls traffic-eng router-id Loopback0
+!
+mpls oam
+!
+mpls traffic-eng
+!
+{# ------------- MPLS LDP Config ------------- #}
+{% if inventory_hostname not in groups['RR'] %}
+mpls ldp
+ igp sync delay on-session-up 10
+ router-id {{ loopbacks[inventory_hostname] }}
+ session protection
+ address-family ipv4
+  label
+   local
+    allocate for host-routes
+    advertise
+     explicit-null
+    exit
+   !
+  !
+ !
+{% for ldp_int in core_interface %}
+{% if "metro" in ldp_int %}
+ interface {{ core_interface[ldp_int] }}
+ !
+{% endif %}
+{% endfor %}
+{% for rsvp_peer in groups['P'] if (rsvp_peer != inventory_hostname and rsvp_peer not in groups['RR']) %}
+ interface tunnel-te{{ hostvars[inventory_hostname]['loopback_id'] }}{{ hostvars[rsvp_peer]['loopback_id'] }}
+ !
+{% endfor %}
+!
+{% endif %}
+{# ----------------------- BGP Config --------------------- #}
+root
+{% if inventory_hostname not in groups['P'] %}
+router bgp {{ global_mpls.bgp.asn }}
+ bgp router-id {{ loopbacks[inventory_hostname] }}
+ address-family ipv4 unicast
+  additional-paths receive
+  additional-paths send
+ !
+ address-family ipv4 multicast
+ !
+ address-family vpnv4 unicast
+ !
+ address-family ipv6 unicast
+  allocate-label all
+ !
+ address-family vpnv6 unicast
+ !
+ address-family ipv4 mdt
+ !
+ address-family l2vpn vpls-vpws
+ !
+ address-family ipv4 rt-filter
+ !
+ address-family ipv4 mvpn
+ !
+ address-family l2vpn evpn
+ !
+ address-family vpnv4 multicast
+ !
+ address-family l2vpn mspw
+ !
+{% if inventory_hostname in groups['RR'] %}
+ neighbor-group RR-CLIENTS
+  remote-as {{ global_mpls.bgp.asn }}
+  cluster-id {{ loopbacks[inventory_hostname] }}
+  update-source Loopback0
+  address-family ipv4 unicast
+   route-reflector-client
+  !
+  address-family ipv4 multicast
+   route-reflector-client
+  !
+  address-family vpnv4 unicast
+   route-reflector-client
+  !
+  address-family ipv6 unicast
+   route-reflector-client
+  !
+  address-family vpnv6 unicast
+   route-reflector-client
+  !
+  address-family ipv4 mdt
+   route-reflector-client
+  !
+  address-family l2vpn vpls-vpws
+   route-reflector-client
+  !
+  address-family ipv4 rt-filter
+   route-reflector-client
+  !
+  address-family ipv4 mvpn
+   route-reflector-client
+  !
+  address-family l2vpn evpn
+   route-reflector-client
+  !
+  address-family l2vpn mspw
+   route-reflector-client
+  !
+ !
+ neighbor-group RR-MESH
+  remote-as {{ global_mpls.bgp.asn }}
+  update-source Loopback0
+  address-family ipv4 unicast
+  !
+  address-family ipv4 multicast
+  !
+  address-family vpnv4 unicast
+  !
+  address-family ipv6 unicast
+  !
+  address-family vpnv6 unicast
+  !
+  address-family ipv4 mdt
+  !
+  address-family l2vpn vpls-vpws
+  !
+  address-family ipv4 rt-filter
+  !
+  address-family ipv4 mvpn
+  !
+  address-family l2vpn evpn
+  !
+  address-family l2vpn mspw
+  !
+ !
+{% for neighbor in groups['All_PEs'] %}
+ neighbor {{ loopbacks[neighbor] }}
+  use neighbor-group RR-CLIENTS
+ !
+{% endfor %}
+{% endif %}
+{% for neighbor in groups['RR'] if neighbor != inventory_hostname %}
+ neighbor {{ loopbacks[neighbor] }}
+  use neighbor-group RR-MESH
+ !
+{% endfor %}
+{% endif %}
+{% if inventory_hostname in groups['All_PEs'] %}
+ neighbor-group RR
+  remote-as {{ global_mpls.bgp.asn }}
+  update-source Loopback0
+  address-family ipv4 unicast
+  !
+  address-family ipv4 multicast
+  !
+  address-family vpnv4 unicast
+  !
+  address-family ipv6 unicast
+  !
+  address-family vpnv6 unicast
+  !
+  address-family ipv4 mdt
+  !
+  address-family l2vpn vpls-vpws
+  !
+  address-family ipv4 rt-filter
+  !
+  address-family ipv4 mvpn
+  !
+  address-family l2vpn evpn
+  !
+  address-family l2vpn mspw
+  !
+ !
+{% for neighbor in groups['RR'] %}
+ neighbor {{ loopbacks[neighbor] }}
+  use neighbor-group RR
+ !
+{% endfor %}
+{% endif %}
+{#
+            /* {{ neighbor }} */
+            neighbor {{ loopbacks[neighbor] }};
+{% endfor %}
+        }
+    }
+{% elif inventory_hostname in groups['All_PEs'] %}
+    bgp {
+        group RR {
+            family inet {
+                any;
+            }
+            family inet-vpn {
+                any;
+            }
+            family inet6 {
+                labeled-unicast {
+                    explicit-null;
+                }
+            }
+            family inet6-vpn {
+                any;
+            }
+            family l2vpn {
+                auto-discovery-only;
+                signaling;
+            }
+            family evpn {
+                signaling;
+            }
+            family inet-mvpn {
+                signaling;
+            }
+            family inet-mdt {
+                signaling;
+            }
+            family route-target {
+                advertise-default;
+            }
+            type internal;
+            local-address {{ loopbacks[inventory_hostname] }};
+            peer-as {{ global_mpls.bgp.asn }};
+{% for neighbor in groups['RR'] %}
+            /* {{ neighbor }} */
+            neighbor {{ loopbacks[neighbor] }};
+{% endfor %}
+        }
+    }
+{% endif %}
+
+{# -------------------- RSVP Config for Core Nodes only ------------------------ #}
+{% if inventory_hostname in groups['P'] %}
+rsvp
+{% for rsvp_int in core_interface %}
+{% if "core" in rsvp_int and rsvp_int.split("_")[1] in groups['P'] %}
+ interface {{ core_interface[rsvp_int] }}
+{% endif %}
+{% endfor %}
+!
+root
+{# ------------------------------ MPLS Config ------------------------------- #}
+{% if inventory_hostname not in groups['RR'] %}
+{% for rsvp_peer in groups['P'] if (rsvp_peer != inventory_hostname and rsvp_peer not in groups['RR']) %}
+interface tunnel-te{{ hostvars[inventory_hostname]['loopback_id'] }}{{ hostvars[rsvp_peer]['loopback_id'] }}
+ ipv4 unnumbered Loopback0
+ signalled-name {{ inventory_hostname }}_to_{{ rsvp_peer }}
+ autoroute announce
+ !
+ exit
+ path-option 1 dynamic
+ destination {{ loopbacks[rsvp_peer] }}
+ record-route
+ path-option 1 dynamic
+!
+{% endfor %}
+{% if inventory_hostname == 'J-P1' %}
+        path P1-P4_viaP3 loose {
+            {{ hostvars[inventory_hostname]['topo']['J-P3']['A-P4']['inet'] }} loose;
+        }
+{% endif %}
+{% endif %}
+mpls traffic-eng
+{% for mpls_int in core_interface %}
+{% if "core" in mpls_int and mpls_int.split("_")[1] in groups['P'] %}
+ !#/* {{ mpls_int }} */
+ interface {{ core_interface[mpls_int] }}{{ ".0" if "." not in core_interface[mpls_int] else "" }}
+{% endif %}
+{% endfor %}
+!
+{% endif %}

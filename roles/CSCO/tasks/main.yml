@@ -1,0 +1,28 @@
+---
+- include_vars:
+    dir: "{{ hostvar_dir }}"
+    extensions: [yml]
+
+- include_vars:
+    dir: "{{ base_dir }}/group_vars/MPLS_Multi"
+    extensions: [yml]
+
+- name: Purge and delete any previous build_dir
+  file: path={{ build_dir }} state=absent
+
+- name: Create build_dir
+  file: path={{ build_dir }} state=directory
+
+- name: Generate {{ vendor|upper }} config in parts
+  template: src="cis_{{ item.key }}.j2" dest="{{ build_dir }}/{{ item.value }}_{{ item.key }}.conf.part"
+  with_dict: 
+    system: 1
+    interface: 2
+    protocols: 3
+#    policy: 4
+
+- name: Assemble and generate {{ vendor|upper }} complete configuration
+  assemble:
+    src: "{{ build_dir }}"
+    dest: "{{ config_dir }}/{{ inventory_hostname }}_complete.conf"
+    regexp: "_*conf.part"

@@ -1,0 +1,6 @@
+card:
+  1:
+    card-type: iom3-xp-b
+    mda:
+      1:
+        mda-type: m5-1gb-sfp-b

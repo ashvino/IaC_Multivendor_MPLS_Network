@@ -1,0 +1,64 @@
+interface Loopback0
+ description "MPLS Core Loopback"
+ ipv4 address {{ loopback_prefix }}.{{ loopback_id }}/32
+ no shutdown
+!
+interface MgmtEth0/0/CPU0/0
+ ipv4 address {{ oob_mgmt_prefix }}.{{ oob_mgmt_ip }}/{{ oob_mgmt_prefix_len }} 
+ no shutdown
+!
+{# -------------------------- Interface config from interfaces.yml -------------------------------- #}
+{% for lcnum in interfaces['linecard'] %}
+{% for slotnum in interfaces['linecard'][lcnum]['slot'] %}
+{% for portnum in interfaces['linecard'][lcnum]['slot'][slotnum]['port'] %}
+{% set intf = (lcnum+1)|string + "/" + (slotnum+1)|string + "/" + (portnum+1)|string %}
+{% set interface_dict = interfaces['linecard'][lcnum]['slot'][slotnum]['port'][portnum] %}
+{% set intf = (int_prefix[interface_dict.phy])|string + (lcnum)|string + "/" + (slotnum)|string + "/" + (portnum)|string  %}
+{% if interface_dict['units'] is defined %}
+interface {{ intf }}
+ description "F= {{ interface_dict.function|capitalize }} | X=Multicore Interface"
+ {{ 'shutdown' if interface_dict.shutdown is defined and interface_dict.shutdown else 'no shutdown' }}
+!
+{% for logical_unit in interface_dict['units'] if logical_unit.function is defined and (logical_unit.function == "core" or "metro") %}
+interface {{ intf }}.{{ logical_unit.id }}
+ description "F= {{ logical_unit.function|capitalize }} | N= {{ logical_unit.neighbor }} | P= {{ logical_unit.neighbor_port }}.{{ logical_unit.id }}"
+{% if logical_unit.inet is defined %}
+ ipv4 address {{ logical_unit.inet }}/{{ logical_unit.mask if logical_unit.mask is defined else '31' }}
+{% endif %}
+ encapsulation {{ interface_dict.encapsulation }} {{ logical_unit.id }}
+ {{ 'shutdown' if logical_unit.shutdown is defined and logical_unit.shutdown else 'no shutdown' }}
+!
+{% endfor %}
+{% else %}
+interface {{ intf }}
+{% if interface_dict is not defined %}
+ shutdown
+{% else %}
+ description "F= {{ interface_dict.function|capitalize }} | N= {{ interface_dict.neighbor }} | P= {{ interface_dict.neighbor_port }}.0"
+{% if interface_dict.inet is defined %}
+ ipv4 address {{ interface_dict.inet }}/{{ interface_dict.mask if interface_dict.mask is defined else '31' }}
+{% endif %}
+ {{ 'shutdown' if interface_dict.shutdown is defined and interface_dict.shutdown else 'no shutdown' }}
+{% endif %}
+!
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% endfor %}
+{# ------------- Default Interface config - shutdown ------------------- #}
+{# Section to generate default port configs #}
+{% for lcnum in interfaces['linecard'] %}
+{% for slotnum in interfaces['linecard'][lcnum]['slot'] %}
+{% for portnum in range(0,20) %}
+{% set interface_dict = interfaces['linecard'][lcnum]['slot'][slotnum]['port'][portnum] %}
+{% set intf = (int_prefix['ge'])|string + (lcnum)|string + "/" + (slotnum)|string + "/" + (portnum)|string  %}
+{% if interface_dict is not defined %}
+interface {{ intf }}
+ description "Default shutdown"
+ shutdown
+!
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% endfor %}
+root

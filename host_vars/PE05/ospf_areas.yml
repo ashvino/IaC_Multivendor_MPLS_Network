@@ -1,0 +1,7 @@
+# Generated from Python script @ . Any changes to this file will be overwritten on next run of Playbooks/Script
+ospf:
+  area:
+    0.0.0.0:
+      interface:
+        metro_P1: {}
+        metro_P2: {}

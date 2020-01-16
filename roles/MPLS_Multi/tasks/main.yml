@@ -1,0 +1,6 @@
+---
+- import_tasks: purge_config_dir.pb
+- import_tasks: loopback_gen.pb
+- import_tasks: gen_ospf_area_int_v2.pb
+- import_tasks: vagnostic_gen_core_interface.pb
+- import_tasks: gen_topology.pb

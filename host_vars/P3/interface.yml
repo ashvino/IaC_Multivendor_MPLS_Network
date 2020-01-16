@@ -1,0 +1,97 @@
+interfaces:
+  linecard:
+    0:
+      slot:
+        0:
+          port:
+            1:
+              #shutdown: False
+              #mtu: 1518
+              function: core
+              encapsulation: dot1q
+              phy: ge
+              lldp: enabled
+              units:
+                - id: 11
+                  function: core
+                  neighbor: RR2
+                  neighbor_port: Gi0/0/0/4
+                  inet: 10.10.0.19
+                  ospf:
+                    area: 0.0.0.0
+                - id: 21
+                  function: core
+                  neighbor: RR1
+                  neighbor_port: ge-0/0/5
+                  inet: 10.10.0.9
+                  ospf:
+                    area: 0.0.0.0
+                - id: 31
+                  function: core
+                  neighbor: P4
+                  neighbor_port: 1/1/2
+                  inet: 10.10.10.4
+                  ospf:
+                    area: 0.0.0.0
+            2:
+              shutdown: False
+              function: core
+              phy: ge
+              encapsulation: ethernet
+              neighbor: P2
+              neighbor_port: Gi0/0/0/2
+              inet: 10.10.10.3
+              ospf:
+                area: 0.0.0.0
+            5:
+              function: metro
+              encapsulation: dot1q
+              phy: ge
+              units:
+                - id: 136
+                  function: metro
+                  neighbor: PE04
+                  neighbor_port: Gi0/0/0/2
+                  inet: 10.10.21.7
+                  ospf:
+                    area: 0.0.0.0
+                - id: 137
+                  function: metro
+                  neighbor: PE06
+                  neighbor_port: 1/1/2
+                  inet: 10.10.22.7
+                  ospf:
+                    area: 0.0.0.0
+                - id: 138
+                  function: metro
+                  neighbor: S-PE03
+                  neighbor_port: 1/1/2
+                  inet: 10.10.31.3
+                  ospf:
+                    area: 8.0.0.3
+            6:
+              function: metro
+              encapsulation: dot1q
+              phy: ge
+              units:
+                - id: 146
+                  function: metro
+                  neighbor: S-PE02
+                  neighbor_port: ge-0/0/2
+                  inet: 10.10.30.7
+                  ospf:
+                    area: 8.0.0.2
+                - id: 147
+                  function: metro
+                  neighbor: E-PE02
+                  neighbor_port: ge-0/0/2
+                  inet: 10.10.40.7
+                  ospf:
+                    area: 0.0.0.0
+                - id: 148
+                  function: metro
+                  neighbor: PE02
+                  neighbor_port: ge-0/0/2
+                  inet: 10.10.20.7
+                  ospf:
+                    area: 0.0.0.0

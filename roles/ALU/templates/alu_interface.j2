@@ -1,0 +1,183 @@
+#--------------------------------------------------
+echo "Card Configuration"
+#--------------------------------------------------
+{# Template to generate config for card/mda/port default provisioning #}
+{# Section to generate config for card/mda #}
+{% for cardnum in card %}
+    card {{ cardnum }}
+        card-type {{ card[cardnum]['card-type'] }}
+{#        virtual-scheduler-adjustment
+            rate-calc-min-int fast-queue 10.00 slow-queue 10.00
+            sched-run-min-int 1.00
+            task-scheduling-int 20.00 
+        exit #}
+{% for mdanum in card[cardnum]['mda'] %}
+        mda {{ mdanum }}
+            mda-type {{ card[cardnum]['mda'][mdanum]['mda-type'] }}
+{#            network
+                ingress
+                    queue-policy "p-router-network-ingress"
+                exit
+            exit #}
+            no shutdown
+        exit
+{% endfor %}
+{#        fp 1
+            egress
+                wred-queue-control
+                    buffer-allocation min 50.00 max 50.00
+                    no shutdown
+                exit
+            exit 
+        exit #}
+        no shutdown
+    exit
+{% endfor %}
+{# --------------------------------------------------------------------------------------------------------- #}
+{# --------------------------------------------------------------------------------------------------------- #}
+#--------------------------------------------------
+echo "Port Configuration"
+#--------------------------------------------------
+{# Section to generate default port configs #}
+{% for cardnum in card %}
+{% for mdanum in card[cardnum]['mda'] %}
+{% set mdarange = (card[cardnum]['mda'][mdanum]['mda-type']|regex_search(".[0-9]{1,2}"))[1:3] | int %}
+{# set mdarange = card[cardnum]['mda'][mdanum]['mda-type'][1] | int #}
+{% for portnum in range(1,mdarange+1) %}
+{% if interfaces['linecard'][cardnum-1] is not defined or interfaces['linecard'][cardnum-1]['slot'][mdanum-1] is not defined or interfaces['linecard'][cardnum-1]['slot'][mdanum-1]['port'][portnum-1] is not defined or (portnum-1) not in interfaces['linecard'][cardnum-1]['slot'][mdanum-1]['port'] %}
+{% set portname = cardnum|string + "/" + mdanum|string + "/" + portnum|string %}
+    port {{portname}}
+        description "--- DEFAULT GENERATED CONFIG ---"
+        ethernet
+            encap-type dot1q
+            mtu {{ global.interface.core.mtu }}
+            lldp
+                dest-mac nearest-bridge
+                    admin-status tx-rx
+                    tx-tlvs port-desc sys-name sys-desc sys-cap
+                    tx-mgmt-address system
+                exit
+            exit
+        exit
+        shutdown
+    exit
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% endfor %}
+{# ------------------------------------------------------------------------------------------------------- #}
+{# Section to generate config for ports defined in variables #}
+{% for lcnum in interfaces['linecard'] %}
+{% for slotnum in interfaces['linecard'][lcnum]['slot'] %}
+{% for portnum in interfaces['linecard'][lcnum]['slot'][slotnum]['port'] %}
+{% set intf = (lcnum+1)|string + "/" + (slotnum+1)|string + "/" + (portnum+1)|string %}
+{% set interface_dict = interfaces['linecard'][lcnum]['slot'][slotnum]['port'][portnum] %}
+    port {{intf}}
+{# if interface_dict['neighbor'] is defined #}
+{% if interface_dict['neighbor'] is defined %}
+        description "F= {{ interface_dict.function|capitalize }} | N= {{ interface_dict['neighbor'] }} | P= {{ interface_dict.neighbor_port }}"
+{% else %}
+        description "F= {{ interface_dict.function|capitalize }} | X= Multicore interface"
+{% endif %}
+        ethernet
+{% if interface_dict['function'] is defined and interface_dict['function'] == 'access' %}
+            mode access
+{% endif %}
+{% if interface_dict['encapsulation'] is defined and interface_dict['encapsulation'] != 'none' %}
+            encap-type {{ interface_dict.encapsulation }}
+{% endif %}
+{% if interface_dict['mtu'] is defined %}
+            mtu {{ interface_dict['mtu'] }}
+{% elif interface_dict['function'] == "core" or "metro"  %}
+            mtu {{ global.interface.core.mtu }}
+{% endif %}
+{% if interface_dict['lldp'] is defined and interface_dict['lldp'] == "enabled" %}
+            lldp
+                dest-mac nearest-bridge
+                    admin-status tx-rx
+                    tx-tlvs port-desc sys-name sys-desc sys-cap
+                    tx-mgmt-address system
+                exit
+            exit
+{% else %}
+            lldp
+                dest-mac nearest-bridge
+                    admin-status disabled
+                    no tx-tlvs
+                    no tx-mgmt-address
+                exit
+            exit
+{% endif %}
+        exit
+{% if interface_dict.shutdown is defined and interface_dict.shutdown %}
+        shutdown
+{% else %}
+        no shutdown
+{% endif %}
+    exit
+{% endfor %}
+{% endfor %}
+{% endfor %}
+{# ------------------------------------------------------------------------------------------------------- #}
+#--------------------------------------------------
+echo "Router (Network Side) Configuration"
+#--------------------------------------------------
+{# Section to generate config for router interface defined in variables #}
+    router
+        interface "system"
+            address {{ loopback_prefix }}.{{ loopback_id }}/32
+            no shutdown
+        exit
+{% for lcnum in interfaces['linecard'] %}
+{% for slotnum in interfaces['linecard'][lcnum]['slot'] %}
+{% for portnum in interfaces['linecard'][lcnum]['slot'][slotnum]['port'] %}
+{% set intf = (lcnum+1)|string + "/" + (slotnum+1)|string + "/" + (portnum+1)|string %}
+{% set interface_dict = interfaces['linecard'][lcnum]['slot'][slotnum]['port'][portnum] %}
+{% if interface_dict['function'] is defined and interface_dict['function'] != 'access' %}
+{% if interface_dict['units'] is defined %}
+{% for logical_unit in interface_dict['units'] if logical_unit.function is defined and (logical_unit.function == "core" or "metro") %}
+{% set mask = '31' if logical_unit.mask is not defined else logical_unit.mask %}
+        interface {{ logical_unit.function }}_{{ logical_unit.neighbor }}
+            description "F= {{ logical_unit.function|capitalize }} | N= {{ logical_unit.neighbor }} | P= {{ logical_unit.neighbor_port }}.{{ logical_unit.id }}"
+            address {{ logical_unit.inet }}/{{ mask }}
+            port {{ intf }}:{{ logical_unit.id }}
+            bfd {{ global.bfd.min_interval }} receive {{ global.bfd.min_interval }} multiplier {{ global.bfd.multiplier }}
+{% if logical_unit.function == "metro" %}
+{% if (logical_unit.ospf.ldp_sync is defined and logical_unit.ospf.ldp_sync > 0 and logical_unit.ospf.ldp_sync != True) %}
+            {{ (('ldp-sync-timer ')|string + (logical_unit.ospf.ldp_sync)|string) }}
+{% elif (logical_unit.ospf.ldp_sync is defined and not logical_unit.ospf.ldp_sync) %}
+            no ldp-sync-timer
+{% else %}
+            ldp-sync-timer {{ alu.ospf.ldp_sync }}
+{% endif %}
+{% else %}
+            no ldp-sync-timer
+{% endif %}
+            no shutdown
+        exit
+{% endfor %}
+{% else %}
+        interface {{ interface_dict.function }}_{{ interface_dict.neighbor }}
+            description "F= {{ interface_dict.function|capitalize }} | N= {{ interface_dict.neighbor }} | P= {{ interface_dict.neighbor_port }}"
+            address {{ interface_dict.inet }}/{{ interface_dict.mask if interface_dict.mask is defined else '31' }}
+            port {{ intf }}
+            bfd {{ global.bfd.min_interval }} receive {{ global.bfd.min_interval }} multiplier {{ global.bfd.multiplier }}
+{% if interface_dict.function == "metro" %}
+i{% if (interface_dict.ospf.ldp_sync is defined and interface_dict.ospf.ldp_sync > 0) %}
+            {{ (('ldp-sync-timer ')|string + (interface_dict.ospf.ldp_sync)|string) }}
+{% elif (interface_dict.ospf.ldp_sync is defined and not interface_dict.ospf.ldp_sync) %}
+            no ldp-sync-timer
+{% else %}
+            ldp-sync-timer {{ alu.ospf.ldp_sync }}
+{% endif %}
+{% else %}
+            no ldp-sync-timer
+{% endif %}
+            no shutdown
+        exit
+{% endif %}
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% endfor %}
+    exit

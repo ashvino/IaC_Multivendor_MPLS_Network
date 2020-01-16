@@ -1,0 +1,36 @@
+interfaces:
+  linecard:
+    0:
+      slot:
+        0:
+          port:
+            2:
+              function: core
+              encapsulation: none
+              phy: ge
+              neighbor: RR1
+              neighbor_port: ge-0/0/2
+              inet: 10.10.0.3 
+              ospf:
+                area: 0.0.0.0
+            3:
+              function: core
+              encapsulation: none
+              phy: ge
+              neighbor: P2
+              neighbor_port: Gi0/0/0/3
+              inet: 10.10.0.16
+              ospf:
+                area: 0.0.0.0
+            4:
+              function: core
+              encapsulation: dot1q
+              phy: ge
+              units:
+                - id: 11
+                  function: core
+                  neighbor: P3
+                  neighbor_port: ge-0/0/1.11
+                  inet: 10.10.0.18
+                  ospf:
+                    area: 0.0.0.0

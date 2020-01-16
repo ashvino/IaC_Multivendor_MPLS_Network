@@ -1,0 +1,25 @@
+# Generated from Python script @ . Any changes to this file will be overwritten on next run of Playbooks/Script
+ospf:
+  area:
+    0.0.0.0:
+      interface:
+        core_P1:
+          metric: 100
+          shutdown: false
+        core_P3: {}
+        core_RR1: {}
+        core_RR3:
+          shutdown: false
+        metro_E-PE01:
+          ldp_sync: 10
+        metro_PE01: {}
+        metro_PE04: {}
+        metro_PE06: {}
+    8.0.0.1:
+      interface:
+        metro_S-PE01:
+          ldp_sync: true
+    8.0.0.3:
+      interface:
+        metro_S-PE03:
+          type: point-to-point

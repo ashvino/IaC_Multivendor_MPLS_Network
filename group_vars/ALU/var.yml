@@ -1,0 +1,19 @@
+---
+#ansible_connection: network_cli
+ansible_network_os: sros
+command_module: "{{ ansible_network_os }}_command"
+config_module: "{{ ansible_network_os }}_config"
+vendor: alcatel-lucent
+int_prefix:
+  ge: none
+  te: none
+  he: none
+alu:
+  ospf:
+    ref_bw: 10000000
+    overload_on_boot_timeout: 300
+    external_db_overflow:
+      limit: 5000
+      seconds: 3600
+    #md5_key: Test
+    ldp_sync: 5

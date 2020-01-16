@@ -1,0 +1,13 @@
+# Generated from Python script @ . Any changes to this file will be overwritten on next run of Playbooks/Script
+ospf:
+  area:
+    0.0.0.0:
+      interface:
+        core_RADIUS01:
+          bfd: disabled
+          passive: true
+          shutdown: false
+        metro_P3:
+          type: point-to-point
+        metro_P4:
+          type: point-to-point

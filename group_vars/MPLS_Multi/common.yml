@@ -1,0 +1,23 @@
+config_dir: '{{ base_dir }}/config'
+services_dir: '{{ base_dir }}/Services'
+build_dir: '{{ config_dir }}/build/{{ inventory_hostname }}'
+hostvar_dir: '{{ base_dir }}/host_vars/{{ inventory_hostname }}'
+oob_mgmt_prefix: 192.168.1
+oob_mgmt_prefix_len: 24
+global_mpls:
+  interface:
+    core:
+      mtu: 1518
+  bfd:
+    min_interval: 300
+    multiplier: 3
+  ospf:
+    ref_bw: 100000000000
+    overload_on_boot_timeout: 300
+    md5_key: ospf_md5
+  bgp:
+    asn: 65000
+  rsvp: 
+    auth_key: RVSP_MD5
+  ldp:
+    auth_key: LDP_MD5

@@ -1,0 +1,4 @@
+# Generated from gen_var.pb using gen_var.j2 template 
+core_interface:
+  metro_P4: Gi0/0/0/1.131
+  metro_P3: Gi0/0/0/2.136

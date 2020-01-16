@@ -1,0 +1,24 @@
+# Generated from gen_var.pb using gen_var.j2 template 
+core_interface:
+{% for lcnum in interfaces['linecard'] %}
+{% for slotnum in interfaces['linecard'][lcnum]['slot'] %}
+{% for portnum in interfaces['linecard'][lcnum]['slot'][slotnum]['port'] %}
+{% set interface_dict = interfaces['linecard'][lcnum]['slot'][slotnum]['port'][portnum] %}
+{#{% if inventory_hostname in groups['ALU'] %}#}
+{% if vendor == "alcatel-lucent" %}
+{% set intf = (lcnum+1)|string + "/" + (slotnum+1)|string + "/" + (portnum+1)|string %}
+{% else %}
+{% set intf = (int_prefix[interface_dict.phy])|string + (lcnum)|string + "/" + (slotnum)|string + "/" + (portnum)|string %}
+{% endif %}
+{% if interface_dict.function is defined and interface_dict.function != 'access' %}
+{% if interface_dict.units is defined %}
+{% for logical_unit in interface_dict.units %}
+  {{ logical_unit.function }}_{{ logical_unit.neighbor }}: {{ intf }}{{ ":" if inventory_hostname in groups['ALU'] else "." }}{{ logical_unit.id }}
+{% endfor %}
+{% else %}
+  {{ interface_dict.function }}_{{ interface_dict.neighbor }}: {{ intf }}{{ ".0" if inventory_hostname in groups['JNPR'] else ""}}
+{% endif %}
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% endfor %}

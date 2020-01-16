@@ -1,0 +1,69 @@
+replace:
+interfaces {
+    lo0 {
+        unit 0 {
+            family inet {
+                address {{ loopback_prefix }}.{{ loopback_id }}/32 {
+                    primary;
+                    preferred;
+                }
+            }
+        }
+    }
+    fxp0 {
+        unit 0 {
+            description " OOB Mgmt Interface "
+            family inet {
+                address {{ oob_mgmt_prefix }}.{{ oob_mgmt_ip }}/{{ oob_mgmt_prefix_len }}; 
+            }
+        }
+    }
+{% for lcnum in interfaces['linecard'] %}
+{% for slotnum in interfaces['linecard'][lcnum]['slot'] %}
+{% for portnum in interfaces['linecard'][lcnum]['slot'][slotnum]['port'] %}
+{% set intf = (lcnum+1)|string + "/" + (slotnum+1)|string + "/" + (portnum+1)|string %}
+{% set interface_dict = interfaces['linecard'][lcnum]['slot'][slotnum]['port'][portnum] %}
+{% set intf = (interface_dict.phy)|string + "-" + (lcnum)|string + "/" + (slotnum)|string + "/" + (portnum)|string  %}
+    {{ intf }} {
+{#        {{ 'disable;' if interface_dict.shutdown is defined and interface_dict.shutdown else '/* No disable */' }} #}
+{% if interface_dict.shutdown is defined and interface_dict.shutdown %}
+        disable;
+{% endif %}
+{% if interface_dict['units'] is defined %}
+        description "F= {{ interface_dict.function|capitalize }} | X=Multicore Interface"
+        encapsulation flexible-ethernet-services;
+        flexible-vlan-tagging;
+{% for logical_unit in interface_dict['units'] if logical_unit.function is defined and (logical_unit.function == "core" or "metro") %}
+        unit {{ logical_unit.id }} {
+            description "F= {{ logical_unit.function|capitalize }} | N= {{ logical_unit.neighbor }} | P= {{ logical_unit.neighbor_port }}.{{ logical_unit.id }}"
+            vlan-id {{ logical_unit.id }};
+{% if logical_unit.inet is defined %}
+            family inet {
+                address {{ logical_unit.inet }}/{{ logical_unit.mask if logical_unit.mask is defined else '31' }};
+            }
+{% endif %}
+{% if (inventory_hostname in groups['P'] or inventory_hostname in groups['All_PEs']) and (logical_unit.neighbor in groups['P'] or logical_unit.neighbor in groups['All_PEs']) %}
+            {{ 'family mpls;' if logical_unit.function == "core" or logical_unit.function == "metro" }}
+{% endif %}
+            {{ 'disable;' if logical_unit.shutdown is defined and logical_unit.shutdown else '#delete: disable;' }}
+        }
+{% endfor %}
+{% else %}
+        description "F= {{ interface_dict.function|capitalize }} | N= {{ interface_dict.neighbor }} | P= {{ interface_dict.neighbor_port }}"
+        unit 0 {
+            description "F= {{ interface_dict.function|capitalize }} | N= {{ interface_dict.neighbor }} | P= {{ interface_dict.neighbor_port }}.0"
+{% if interface_dict.inet is defined %}
+            family inet {
+                address {{ interface_dict.inet }}/{{ interface_dict.mask if interface_dict.mask is defined else '31' }};
+            }
+{% if inventory_hostname in groups['P'] or inventory_hostname in groups['All_PEs'] %}
+            {{ 'family mpls;' if interface_dict.function == "core" or interface_dict.function == "metro" }}
+{% endif %}
+        }
+{% endif %}
+{% endif %}
+    }
+{% endfor %}
+{% endfor %}
+{% endfor %}
+}

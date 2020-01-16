@@ -1,0 +1,19 @@
+# Generated from Python script @ . Any changes to this file will be overwritten on next run of Playbooks/Script
+ospf:
+  area:
+    0.0.0.0:
+      interface:
+        ge-0/0/1.11: {}
+        ge-0/0/1.21: {}
+        ge-0/0/1.31: {}
+        ge-0/0/2.0: {}
+        ge-0/0/5.136: {}
+        ge-0/0/5.137: {}
+        ge-0/0/6.147: {}
+        ge-0/0/6.148: {}
+    8.0.0.2:
+      interface:
+        ge-0/0/6.146: {}
+    8.0.0.3:
+      interface:
+        ge-0/0/5.138: {}

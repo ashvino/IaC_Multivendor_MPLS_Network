@@ -1,0 +1,11 @@
+# Generated from Python script @ . Any changes to this file will be overwritten on next run of Playbooks/Script
+ospf:
+  area:
+    0.0.0.0:
+      interface:
+        core_P1: {}
+        core_P4: {}
+        core_RR1:
+          bfd: disabled
+          metric: 100
+          shutdown: false

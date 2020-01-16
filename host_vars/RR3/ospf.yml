@@ -1,0 +1,13 @@
+ospf:
+  policy:
+#    export: static-to-ospf
+#    import: Test
+  area:
+    0.0.0.0:
+      interface:
+        core_J-RR:
+          type: point-to-point
+        core_J-P1:
+          type: point-to-point
+        core_A-P4:
+          type: point-to-point

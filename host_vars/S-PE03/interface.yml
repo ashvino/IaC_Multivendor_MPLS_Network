@@ -1,0 +1,41 @@
+interfaces:
+  linecard:
+    0:
+      slot:
+        0:
+          port:
+            0:
+              #shutdown: False
+              #mtu: 1518
+              function: metro
+              encapsulation: dot1q
+              phy: ge
+              lldp: enabled
+              units:
+                - id: 133
+                  #interface_name: core_P1  #Generated based on {{function}}_{{neighbor}} and stored in router_interface.yml
+                  function: metro
+                  neighbor: P4
+                  neighbor_port: 1/1/5
+                  inet: 10.10.31.0
+                  mask: 31
+                  ospf:
+                    area: 8.0.0.3
+                    type: point-to-point
+            1:
+              shutdown: False
+              function: metro
+              neighbor: P3
+              neighbor_port: ge-0/0/5
+              encapsulation: dot1q
+              phy: ge
+              units:
+                - id: 138
+                  function: metro
+                  neighbor: P3
+                  neighbor_port: ge-0/0/5
+                  inet: 10.10.31.2
+                  mask: 31
+                  ospf:
+                    area: 8.0.0.3
+                    type: point-to-point

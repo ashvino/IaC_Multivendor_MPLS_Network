@@ -1,0 +1,21 @@
+#ansible_connection: network_cli
+ansible_network_os: iosxr
+command_module: "{{ ansible_network_os }}_command"
+vendor: cisco 
+int_prefix: 
+  ge: Gi0/
+  te: Te0/
+  he: Hu0/
+csco:
+  banner: |-
+    "
+      --------------------------------------------------------------------------------------
+    |           WARNING: You have accessed a system operated by {{ company_name}}                |
+    |                                                                                      |
+    | You are required to have a personal authorisation from the system administrator      |
+    | before you use this system and you are strictly limited to the use set out in        |
+    | that written authorisation. Unauthorised access to or misuse of this system is       |
+    | prohibited and constitutes an offence.					           |
+    |                                                                                      |
+    | This is a private system and any authorized access is illegal and will be prosecuted |
+      -------------------------------------------------------------------------------------"

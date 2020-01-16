@@ -1,0 +1,32 @@
+# Generated from gen_var.pb using gen_var.j2 template 
+core_interface:
+  core_RR2:
+    ifl: ge-0/0/1.11
+    inet: 10.10.0.19
+  core_RR1:
+    ifl: ge-0/0/1.21
+    inet: 10.10.0.9
+  core_P4:
+    ifl: ge-0/0/1.31
+    inet: 10.10.10.4
+  core_P2:
+    ifl: ge-0/0/2.0
+    inet: 10.10.10.3
+  metro_PE04:
+    ifl: ge-0/0/5.136
+    inet: 10.10.21.7
+  metro_PE06:
+    ifl: ge-0/0/5.137
+    inet: 10.10.22.7
+  metro_S-PE03:
+    ifl: ge-0/0/5.138
+    inet: 10.10.31.3
+  metro_S-PE02:
+    ifl: ge-0/0/6.146
+    inet: 10.10.30.7
+  metro_E-PE02:
+    ifl: ge-0/0/6.147
+    inet: 10.10.40.7
+  metro_PE02:
+    ifl: ge-0/0/6.148
+    inet: 10.10.20.7

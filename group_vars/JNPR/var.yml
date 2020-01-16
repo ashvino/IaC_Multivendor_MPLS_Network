@@ -1,0 +1,9 @@
+#ansible_connection: network_cli
+ansible_network_os: junos
+command_module: "{{ ansible_network_os }}_command"
+config_module: "{{ ansible_network_os }}_config"
+vendor: juniper
+int_prefix:
+  ge: ge-	# ge: Gigabit Ethernet
+  te: xe-	# te: TenGig Ethernet
+  he: xt-   # he: HundredGig Ethernet

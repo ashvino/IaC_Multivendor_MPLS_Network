@@ -1,0 +1,20 @@
+# Generated from gen_var.pb using gen_var.j2 template 
+core_interface:
+  core_RR3:
+    ifl: ge-0/0/1.0
+    inet: 10.10.0.0
+  core_RR2:
+    ifl: ge-0/0/2.0
+    inet: 10.10.0.2
+  core_P1:
+    ifl: ge-0/0/3.20
+    inet: 10.10.0.4
+  core_P2:
+    ifl: ge-0/0/4.0
+    inet: 10.10.0.6
+  core_P3:
+    ifl: ge-0/0/5.21
+    inet: 10.10.0.8
+  core_P4:
+    ifl: ge-0/0/6.50
+    inet: 10.10.0.10

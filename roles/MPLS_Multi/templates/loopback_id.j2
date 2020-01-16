@@ -1,0 +1,14 @@
+# Generated from loopback_id.pb using loopback_id.j2 template
+{% set id = inventory_hostname[-1] %}
+{% if inventory_hostname == "J-E-PE01" or inventory_hostname == "J-E-PE02" %}
+loopback_id: 1{{ id }}
+{% elif inventory_hostname == "J-RR" %}
+loopback_id: 1
+{% elif inventory_hostname == "C-RR" %}
+loopback_id: 2
+{% elif inventory_hostname == "A-RR" %}
+loopback_id: 3
+{% else %}
+loopback_id: {{ id }}
+{% endif %}
+ansible_host: {{ oob_mgmt_prefix }}.{{ oob_mgmt_ip }}
